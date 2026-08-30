@@ -3,8 +3,10 @@ import sys
 
 from .multiagentenv import MultiAgentEnv
 from .gymma import GymmaWrapper
-from .smaclite_wrapper import SMACliteWrapper
-
+def smaclite_fn(**kwargs) -> MultiAgentEnv:
+    from .smaclite_wrapper import SMACliteWrapper
+    kwargs = __check_and_prepare_smac_kwargs(kwargs)
+    return SMACliteWrapper(**kwargs)
 
 if sys.platform == "linux":
     os.environ.setdefault(
@@ -22,10 +24,6 @@ def __check_and_prepare_smac_kwargs(kwargs):
     assert "map_name" in kwargs, "Please specify the map_name in the env_args"
     return kwargs
 
-
-def smaclite_fn(**kwargs) -> MultiAgentEnv:
-    kwargs = __check_and_prepare_smac_kwargs(kwargs)
-    return SMACliteWrapper(**kwargs)
 
 
 def gymma_fn(**kwargs) -> MultiAgentEnv:

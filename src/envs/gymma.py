@@ -36,7 +36,11 @@ class GymmaWrapper(MultiAgentEnv):
         reward_scalarisation,
         **kwargs,
     ):
-        self._env = gym.make(f"{key}", **kwargs)
+        record_video = kwargs.pop("record_video", False)
+        render_mode = "rgb_array" if record_video else None
+        self._env = gym.make(f"{key}", render_mode=render_mode, **kwargs)
+        if record_video:
+            self._env = gym.wrappers.RecordVideo(self._env, video_folder="results/replays", episode_trigger=lambda e: True)
         self._env = TimeLimit(self._env, max_episode_steps=time_limit)
         self._env = FlattenObservation(self._env)
 
@@ -96,6 +100,20 @@ class GymmaWrapper(MultiAgentEnv):
 
         if isinstance(done, Iterable):
             done = all(done)
+            
+        if self.common_reward:
+            if reward > 0:
+                self.episode_succeeded = True
+        else:
+            if sum(reward) > 0:
+                self.episode_succeeded = True
+                
+        if done:
+            if getattr(self, 'episode_succeeded', False):
+                print(f"EPISODE_SUCCESS_DIST: {getattr(self, 'last_initial_max_dist', -1)}")
+            else:
+                print(f"EPISODE_FAILURE_DIST: {getattr(self, 'last_initial_max_dist', -1)}")
+                
         return self._obs, reward, done, truncated, self._info
 
     def get_obs(self):
@@ -141,6 +159,18 @@ class GymmaWrapper(MultiAgentEnv):
         """Returns initial observations and info"""
         obs, info = self._env.reset(seed=seed, options=options)
         self._obs = self._pad_observation(obs)
+        
+        env = self._env.unwrapped
+        box_positions = list(zip(*env.field.nonzero()))
+        if box_positions:
+            box_pos = box_positions[0]
+            distances = [abs(p.position[0] - box_pos[0]) + abs(p.position[1] - box_pos[1]) for p in env.players]
+            self.last_initial_max_dist = max(distances)
+        else:
+            self.last_initial_max_dist = -1
+            
+        self.episode_succeeded = False
+        
         return self._obs, info
 
     def render(self):
