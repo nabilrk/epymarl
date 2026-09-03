@@ -37,7 +37,9 @@ class GymmaWrapper(MultiAgentEnv):
         **kwargs,
     ):
         record_video = kwargs.pop("record_video", False)
-        render_mode = "rgb_array" if record_video else None
+        render_mode = "rgb_array" if record_video else kwargs.pop("render_mode", None)
+        if "layout" in kwargs and kwargs["layout"] is None:
+            kwargs.pop("layout")
         self._env = gym.make(f"{key}", render_mode=render_mode, **kwargs)
         if record_video:
             self._env = gym.wrappers.RecordVideo(self._env, video_folder="results/replays", episode_trigger=lambda e: True)
@@ -109,6 +111,10 @@ class GymmaWrapper(MultiAgentEnv):
                 self.episode_succeeded = True
                 
         if done:
+            delivered = 0
+            if hasattr(self._env.unwrapped, 'delivered_boxes'):
+                delivered = len(self._env.unwrapped.delivered_boxes)
+            print(f"FRUITS_DELIVERED: {delivered}")
             if getattr(self, 'episode_succeeded', False):
                 print(f"EPISODE_SUCCESS_DIST: {getattr(self, 'last_initial_max_dist', -1)}")
             else:
@@ -161,11 +167,14 @@ class GymmaWrapper(MultiAgentEnv):
         self._obs = self._pad_observation(obs)
         
         env = self._env.unwrapped
-        box_positions = list(zip(*env.field.nonzero()))
-        if box_positions:
-            box_pos = box_positions[0]
-            distances = [abs(p.position[0] - box_pos[0]) + abs(p.position[1] - box_pos[1]) for p in env.players]
-            self.last_initial_max_dist = max(distances)
+        if hasattr(env, 'field') and hasattr(env, 'players'):
+            box_positions = list(zip(*env.field.nonzero()))
+            if box_positions:
+                box_pos = box_positions[0]
+                distances = [abs(p.position[0] - box_pos[0]) + abs(p.position[1] - box_pos[1]) for p in env.players]
+                self.last_initial_max_dist = max(distances)
+            else:
+                self.last_initial_max_dist = -1
         else:
             self.last_initial_max_dist = -1
             

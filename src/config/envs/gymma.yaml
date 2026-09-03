@@ -5,6 +5,8 @@ env_args:
   time_limit: 100
   pretrained_wrapper: null
   record_video: False
+  render_mode: null
+  layout: null
 
 test_greedy: True
 test_nepisode: 100
