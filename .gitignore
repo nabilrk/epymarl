@@ -246,3 +246,12 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.gitignore.io/api/linux,python,windows,pycharm+all,visualstudiocode
+# Custom Project Ignores
+results/
+venv/
+*.log
+scratch/*
+!scratch/generate_ipynb.py
+!scratch/evaluate_local.sh
+!scratch/run_experiment.py
+!scratch/generate_success_videos.py
