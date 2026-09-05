@@ -28,3 +28,25 @@ We successfully completed local parallel training of 4 cooperative agents operat
 ## Next Steps
 - Await the results of the 100M timestep training run currently executing on Google Colab.
 - Analyze the video outputs from the 10x10 grid to see if the agents can scale their coordination strategy to a significantly larger state space.
+
+---
+
+## Update: September 5, 2026 (100-Million Timestep Local Evaluation)
+
+**Environment**: `Transportation-10x10-4p-2f-coop-v3`
+**Scale**: 100 Million Timesteps (Locally trained via daemon processes over 17+ hours)
+
+### Key Changes
+- Updated the base environment configuration in `lb-transportation/__init__.py` to increase `max_episode_steps` from 50 to 100 globally to give agents enough time to navigate the 10x10 grid.
+- Engineered `scratch/run_goal.sh` to automate training, model checkpoint recovery, greedy evaluation, and CSV metric extraction.
+
+### Results & Insights (10x10 Grid)
+The 100M timestep training run has completed. Over a rigorous 1,000-episode evaluation:
+- **Average Episode Length**: 100.0 steps
+- **Average Return**: -4.0
+- **Success Percentage**: 0.00%
+
+**Conclusion**: The agents completely failed to learn to solve the 10x10 grid. Unlike the 5x5 grid, the state space in a 10x10 grid is 4 times larger. The agents rely on random exploration to stumble upon a reward initially. The statistical probability of two agents randomly deciding to stand next to the same box, both executing the `LOAD` action simultaneously, and then randomly carrying it to the goal is astronomically low. The standard MAPPO exploration simply isn't dense enough.
+
+**Next Steps**: 
+To scale to the 10x10 grid, the agents will likely require **Curriculum Learning** (slowly scaling the grid from 5x5 up to 10x10) or dense proxy rewards to bootstrap the initial coordination behavior.
