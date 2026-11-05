@@ -37,7 +37,8 @@ class GymmaWrapper(MultiAgentEnv):
         **kwargs,
     ):
         record_video = kwargs.pop("record_video", False)
-        render_mode = "rgb_array" if record_video else kwargs.pop("render_mode", None)
+        kwargs_render_mode = kwargs.pop("render_mode", None)
+        render_mode = "rgb_array" if record_video else kwargs_render_mode
         if "layout" in kwargs and kwargs["layout"] is None:
             kwargs.pop("layout")
         self._env = gym.make(f"{key}", render_mode=render_mode, **kwargs)
@@ -116,9 +117,11 @@ class GymmaWrapper(MultiAgentEnv):
                 delivered = len(self._env.unwrapped.delivered_boxes)
             print(f"FRUITS_DELIVERED: {delivered}")
             if getattr(self, 'episode_succeeded', False):
-                print(f"EPISODE_SUCCESS_DIST: {getattr(self, 'last_initial_max_dist', -1)}")
+                print(f"EPISODE_SUCCESS_AGENT_TO_BOX_DIST: {getattr(self, 'last_initial_agent_to_box_dist', -1)}")
+                print(f"EPISODE_SUCCESS_BOX_TO_GOAL_DIST: {getattr(self, 'last_initial_box_to_goal_dist', -1)}")
             else:
-                print(f"EPISODE_FAILURE_DIST: {getattr(self, 'last_initial_max_dist', -1)}")
+                print(f"EPISODE_FAILURE_AGENT_TO_BOX_DIST: {getattr(self, 'last_initial_agent_to_box_dist', -1)}")
+                print(f"EPISODE_FAILURE_BOX_TO_GOAL_DIST: {getattr(self, 'last_initial_box_to_goal_dist', -1)}")
                 
         return self._obs, reward, done, truncated, self._info
 
@@ -172,11 +175,18 @@ class GymmaWrapper(MultiAgentEnv):
             if box_positions:
                 box_pos = box_positions[0]
                 distances = [abs(p.position[0] - box_pos[0]) + abs(p.position[1] - box_pos[1]) for p in env.players]
-                self.last_initial_max_dist = max(distances)
+                self.last_initial_agent_to_box_dist = max(distances)
+                
+                if hasattr(env, 'goal_pos') and env.goal_pos is not None:
+                    self.last_initial_box_to_goal_dist = abs(box_pos[0] - env.goal_pos[0]) + abs(box_pos[1] - env.goal_pos[1])
+                else:
+                    self.last_initial_box_to_goal_dist = -1
             else:
-                self.last_initial_max_dist = -1
+                self.last_initial_agent_to_box_dist = -1
+                self.last_initial_box_to_goal_dist = -1
         else:
-            self.last_initial_max_dist = -1
+            self.last_initial_agent_to_box_dist = -1
+            self.last_initial_box_to_goal_dist = -1
             
         self.episode_succeeded = False
         
